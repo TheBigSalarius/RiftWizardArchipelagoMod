@@ -15,8 +15,8 @@ print("Archipelago Mod loading...")
 #TEST REMOVING
 sys.path.append('..')
 
-APRemoteCommunication = os.path.join("mods", "Archipelago", "AP")
-APLocalCommunication = os.path.join("mods", "Archipelago", "local")
+APRemoteCommunication = os.path.join("mods", "ArchipelagoMod", "AP")
+APLocalCommunication = os.path.join("mods", "ArchipelagoMod", "local")
 SlotDataPath = os.path.join(APRemoteCommunication, "AP_settings.json")
 APSettingsFile = "AP_settings.json"
 APManaDotFile = "AP_18001.item"
