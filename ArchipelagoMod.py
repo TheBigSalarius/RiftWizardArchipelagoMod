@@ -158,7 +158,7 @@ def ap_is_awaiting_input(self):
             with open(SlotDataPath, "r") as q:
                 data = json.load(q)
                 FloorGoalStatus = data["goal"]
-                print("Goal Status Set: ", FloorGoalStatus)
+                # print("Goal Status Set: ", FloorGoalStatus)
 
     # Checks for the floor goal # if the goal is floor instead of Mordred (initial check)
     if FloorGoalStatus == 1 and FloorGoal == -1:
@@ -166,7 +166,7 @@ def ap_is_awaiting_input(self):
             with open(SlotDataPath, "r") as s:
                 data = json.load(s)
                 FloorGoal = data["floor_goal"]
-                print("Floor Goal Set: ", FloorGoal)
+                # print("Floor Goal Set: ", FloorGoal)
 
     process_mana_file(self, APManaDotFile, 1)
     process_mana_file(self, APDoubleManaDotFile, 2)
@@ -252,7 +252,6 @@ Game.Game.subscribe_mutators = ap_subscribe_mutators
 
 # Everything below is for disabling Achievements/Steam Achievements/Vanilla unlocks (prevents mod messing with stats)
 def try_get_sw_disable():
-    print("try_get_sw_disable")
     pass
 
 
@@ -260,7 +259,6 @@ SteamAdapter.try_get_sw = try_get_sw_disable
 
 
 def set_stat_disable(stat, val):
-    print("set_stat_disable")
     pass
 
 
@@ -268,7 +266,6 @@ SteamAdapter.set_stat = set_stat_disable
 
 
 def set_presence_menu_disable():
-    print("set_presence_menu_disable")
     pass
 
 
@@ -276,7 +273,6 @@ SteamAdapter.set_presence_menu = set_presence_menu_disable
 
 
 def set_trial_complete_disable(trial_name):
-    print("set_trial_complete_disable")
     pass
 
 
