@@ -172,9 +172,10 @@ def ap_is_awaiting_input(self):
     process_mana_file(self, APDoubleManaDotFile, 2)
 
     # Receive Deathlink death
-    if os.path.isfile(os.path.join(APRemoteCommunication, "deathlink")):
+    if os.path.isfile(os.path.join(APRemoteCommunication, "deathlink")) and not self.deploying:
         RiftWizard.main_view.play_music('lose')
         RiftWizard.main_view.play_sound("death_player")
+#        RiftWizard.main_view.game.deploying = False
         self.gameover = True
         self.finalize_save(victory=False)
         os.remove(os.path.join(APRemoteCommunication, "deathlink"))
@@ -191,6 +192,8 @@ def ap_is_awaiting_input(self):
 
     return self.cur_level.is_awaiting_input
 
+    print(RiftWizard.main_view.game.state)
+    #print(self.state)
 
 Game.Game.is_awaiting_input = ap_is_awaiting_input
 
