@@ -56,7 +56,7 @@ def on_enter_portal_goal(self, player):
         self.next_level = None
 
     if not self.locked:
-        if FixLevelSkip == FloorGoal and FloorGoalStatus == 1:
+        if (FixLevelSkip + 1) == FloorGoal and FloorGoalStatus == 1:
             RiftWizard.main_view.play_sound('victory_new')
             RiftWizard.main_view.game.victory = True
             RiftWizard.main_view.game.finalize_save(victory=True)
