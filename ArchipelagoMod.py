@@ -13,6 +13,7 @@ import json
 # Add the base directory to sys.path for testing- allows us to run the mod directly for quick testing
 import sys
 import ctypes
+from Monsters import MordredCorruption
 
 from Consumables import all_consumables, mana_potion, heal_potion
 from RiftWizard import CHAR_HEART
@@ -28,13 +29,16 @@ print("Archipelago Mod loading...")
 # TEST REMOVING
 sys.path.append('..')
 
-APRemoteCommunication = os.path.join("mods", "ArchipelagoMod", "AP")
-APLocalCommunication = os.path.join("mods", "ArchipelagoMod", "local")
-SlotDataPath = os.path.join(APRemoteCommunication, "AP_settings.json")
+
+SlotDataPath = os.path.join("mods", "ArchipelagoMod", "AP", "AP_settings.json")
+
+
+
 APSettingsFile = "AP_settings.json"
 APManaDotFile = "AP_18001.item"
 APDoubleManaDotFile = "AP_18002.item"
 APConsumableFile = "AP_18003.item"
+APTrapFile = "AP_18004.item"
 LastCheckedFloor = "last_checked_floor"
 LastCheckedManaDot = "last_checked_manadot"
 FixLevelSkip = 0
@@ -46,7 +50,7 @@ ConsumableCurrentCount = -1
 ConsumableSteps = -1
 ConsumableCurrentStep = 0
 UIPatch = -1
-
+Seed = -1
 LocationOffset = 18000
 
 frm = inspect.stack()[-1]
@@ -237,6 +241,15 @@ def process_mana_file(self, item_file, xp_per_pickup):
                                 RiftWizard.main_view.play_sound("item_pickup")
                                 LastPickupTime = time.time()
 
+                elif item_file == APTrapFile:
+                    if remote_manadot > local_manadot:
+                            if os.path.isfile(os.path.join(APRemoteCommunication, APTrapFile)) and not self.deploying:
+                                spell = MordredCorruption()
+                                spell.caster = self.p1
+                                self.try_cast(spell, self.p1.x, self.p1.y)
+                                with open((os.path.join(APLocalCommunication, item_file)), 'w') as t:
+                                    t.write(str((int(local_manadot) + 1)))
+                                    t.close()
                 else:
                     if remote_manadot > local_manadot:
                         with open((os.path.join(APLocalCommunication, item_file)), 'w') as d:
@@ -258,10 +271,29 @@ def ap_is_awaiting_input(self):
     global ConsumableCount
     global ConsumableSteps
     global UIPatch
+    global APRemoteCommunication
+    global APLocalCommunication
+    global Seed
 
     check_connection()
     # Fixes an issue where the level is 0 inbetween levels and the level is 0 when dropped on an item on a new floor
     FixLevelSkip = RiftWizard.main_view.game.level_num
+
+
+    if Seed == -1:
+        if os.path.isfile(SlotDataPath):
+            with open(SlotDataPath, "r") as q:
+                data = json.load(q)
+                Seed = data["seed"]
+                APRemoteCommunication = os.path.join("mods", "ArchipelagoMod", "AP", Seed)
+                APLocalCommunication = os.path.join("mods", "ArchipelagoMod", "AP", Seed, "local")
+
+    # Trap logic for Mordred Corruption
+    #if os.path.isfile(os.path.join(APRemoteCommunication, APTrapFile)) and not self.deploying:
+    #    spell = MordredCorruption()
+    #    spell.caster = self.p1
+    #    self.try_cast(spell, self.p1.x, self.p1.y)
+    #    os.remove(os.path.join(APRemoteCommunication, APTrapFile))
 
     # Fix since game needs to be launched before UI changes applied
     if UIPatch == -1:
@@ -306,6 +338,7 @@ def ap_is_awaiting_input(self):
     process_mana_file(self, APManaDotFile, 1)
     process_mana_file(self, APDoubleManaDotFile, 2)
     process_mana_file(self, APConsumableFile, 0)
+    process_mana_file(self, APTrapFile, 0)
 
     # Receive Deathlink death
     if os.path.isfile(os.path.join(APRemoteCommunication, "deathlink")) and not self.deploying:
@@ -369,6 +402,20 @@ Game.Game.check_triggers = check_triggers_ap
 def ap_subscribe_mutators(self):
     """ Runs at new game/next floor to ensure base folder is created and tracks last checked location """
     global ConsumableCurrentStep
+    global Seed
+    global APRemoteCommunication
+    global APLocalCommunication
+    global APTrapFile
+
+    check_connection()
+    if Seed == -1:
+        if os.path.isfile(SlotDataPath):
+            with open(SlotDataPath, "r") as q:
+                data = json.load(q)
+                Seed = data["seed"]
+    APRemoteCommunication = os.path.join("mods", "ArchipelagoMod", "AP", Seed)
+    APLocalCommunication = os.path.join("mods", "ArchipelagoMod", "AP", Seed, "local")
+
     for mutator in self.mutators:
         for event_type, handler in mutator.global_triggers.items():
             self.cur_level.event_manager.register_global_trigger(event_type, handler)
@@ -378,8 +425,9 @@ def ap_subscribe_mutators(self):
         file_list = os.listdir(APLocalCommunication)
         #ConsumableCurrentStep = 0
         for file_name in file_list:
-            file_path = os.path.join(APLocalCommunication, file_name)
-            os.remove(file_path)
+            if file_name != APTrapFile:
+                file_path = os.path.join(APLocalCommunication, file_name)
+                os.remove(file_path)
     if not os.path.isfile(os.path.join(APLocalCommunication, LastCheckedFloor)):
         with open((os.path.join(APLocalCommunication, LastCheckedFloor)), 'w') as m:
             m.write('0')
@@ -428,6 +476,8 @@ def draw_character_ap():
     RiftWizard.main_view.draw_string("Realm %d" % RiftWizard.main_view.game.level_num,
                                      RiftWizard.main_view.character_display, cur_x, cur_y)
     cur_y += linesize
+
+    # THE ONLY CHANGE TO THE UI
     if ConsumableCurrentCount != ConsumableCount:
         if ConsumableSteps - ConsumableCurrentStep == 0:
             RiftWizard.main_view.draw_string("AP Item Countdown %d" % int(ConsumableSteps - ConsumableCurrentStep),
