@@ -139,7 +139,7 @@ def ap_on_player_enter(self, player):
         with open(last_checked_manadot_path, "r") as h:
             last_dot = int(h.read())
         with open(last_checked_manadot_path, 'w') as i:
-            i.write(str(last_dot + 1))
+             i.write(str(min(last_dot + 1, 3)))
     with open(last_checked_floor_path, "r") as j:
         check_calc_floor = int(j.read())
     with open(last_checked_manadot_path, 'r') as k:
