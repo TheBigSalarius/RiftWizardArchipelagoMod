@@ -15,7 +15,7 @@ import sys
 import ctypes
 from Monsters import MordredCorruption
 
-from Consumables import all_consumables, mana_potion, heal_potion
+from Consumables import all_consumables, mana_potion, heal_potion, memory_draught
 from RiftWizard import CHAR_HEART
 from RiftWizard import CHAR_SHIELD
 from RiftWizard import COLOR_XP
@@ -52,6 +52,7 @@ ConsumableCurrentStep = 0
 UIPatch = -1
 Seed = -1
 LocationOffset = 18000
+APChecked = 4
 
 frm = inspect.stack()[-1]
 RiftWizard = inspect.getmodule(frm[0])
@@ -59,6 +60,7 @@ RiftWizard = inspect.getmodule(frm[0])
 rand_item_list = all_consumables
 rand_item_list.append((mana_potion, Consumables.COMMON))
 rand_item_list.append((heal_potion, Consumables.COMMON))
+rand_item_list.remove((memory_draught, Consumables.SUPER_RARE))
 
 
 def refresh_consumable_count():
@@ -84,6 +86,54 @@ def on_init(self):
 
 Level.ManaDot.__init__ = on_init
 
+def add_prop_ap(self, prop, x, y):
+    global APChecked
+    global APRemoteCommunication
+    global APLocalCommunication
+    global Seed
+    global FixLevelSkip
+    check_connection()
+
+    if Seed == -1:
+        if os.path.isfile(SlotDataPath):
+            with open(SlotDataPath, "r") as q:
+                data = json.load(q)
+                Seed = data["seed"]
+                APRemoteCommunication = os.path.join("mods", "ArchipelagoMod", "AP", Seed)
+                APLocalCommunication = os.path.join("mods", "ArchipelagoMod", "AP", Seed, "local")
+
+    if prop.name == "AP Item":   
+        if APChecked < 3:
+            APChecked += 1
+        else:
+            APChecked = 1
+        check_file_name = ("send" + str(((FixLevelSkip) * 3) + APChecked + LocationOffset))
+        file_path = os.path.join(APRemoteCommunication, check_file_name)
+        if os.path.isfile(file_path):
+            return
+
+    prop.x = x
+    prop.y = y
+    prop.level = self
+    self.tiles[x][y].prop = prop
+    self.props.append(prop)
+    
+Level.Level.add_prop = add_prop_ap
+
+# Fix for memory draught to grant flat AP (not working yet)
+
+#def memory_draught_ap():
+#	item = Item()
+#	item.name = "Draught of Memories"
+#	item.description = "Fixed AP item for testing purposes. Grants 2 AP."
+#	spell = grantAP()
+#	item.set_spell(spell)
+#	return item
+
+#Consumables.memory_draught = memory_draught_ap
+
+#def grantAP():
+#    RiftWizard.main_view.game.p1.xp += 2
 
 def check_connection():
     """ Ensures the Rift Wizard Client is running (ensures connection to AP server) Error message until connected"""
@@ -240,7 +290,7 @@ def process_mana_file(self, item_file, xp_per_pickup):
                             if time.time() - LastPickupTime >= 1:
                                 RiftWizard.main_view.play_sound("item_pickup")
                                 LastPickupTime = time.time()
-
+                                
                 elif item_file == APTrapFile:
                     if remote_manadot > local_manadot:
                             if os.path.isfile(os.path.join(APRemoteCommunication, APTrapFile)) and not self.deploying:
@@ -278,7 +328,6 @@ def ap_is_awaiting_input(self):
     check_connection()
     # Fixes an issue where the level is 0 inbetween levels and the level is 0 when dropped on an item on a new floor
     FixLevelSkip = RiftWizard.main_view.game.level_num
-
 
     if Seed == -1:
         if os.path.isfile(SlotDataPath):
@@ -616,6 +665,8 @@ SteamAdapter.try_get_sw = try_get_sw_disable
 
 
 def set_stat_disable(stat, val):
+    global FixLevelSkip
+    FixLevelSkip = 0
     pass
 
 
