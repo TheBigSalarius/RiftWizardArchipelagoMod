@@ -150,24 +150,6 @@ def check_connection():
         time.sleep(1)
 
 
-# Victory check when finishing a floor when the goal is based on floor
-def on_enter_portal_goal(self, player):
-    """ Grants victory on entering the required portal when a Floor Goal is set """
-    if self.reroll:
-        self.next_level = None
-
-    if not self.locked:
-        if (FixLevelSkip + 1) == FloorGoal and FloorGoalStatus == 1:
-            RiftWizard.main_view.play_sound('victory_new')
-            RiftWizard.main_view.game.victory = True
-            RiftWizard.main_view.game.finalize_save(victory=True)
-        else:
-            self.level.cur_portal = self
-
-
-Level.Portal.on_player_enter = on_enter_portal_goal
-
-
 # This is called when player enters the Mana Dot item square.
 def ap_on_player_enter(self, player):
     """ Handles the behavior of sending location checks when picking up default AP checks (replaced ManaDots)"""
@@ -409,6 +391,10 @@ def ap_is_awaiting_input(self):
         self.gameover = True
         self.finalize_save(victory=False)
         os.remove(os.path.join(APRemoteCommunication, "deathlink"))
+    if FixLevelSkip == FloorGoal and FloorGoalStatus == 1:
+        RiftWizard.main_view.play_sound('victory_new')
+        RiftWizard.main_view.game.victory = True
+        RiftWizard.main_view.game.finalize_save(victory=True)
 
     # Write victory file for client on game victory
     if self.victory:
@@ -422,7 +408,7 @@ def ap_is_awaiting_input(self):
 
     return self.cur_level.is_awaiting_input
 
-    print(RiftWizard.main_view.game.state)
+    #print(RiftWizard.main_view.game.state)
     # print(self.state)
 
 
@@ -683,7 +669,7 @@ def set_stat_disable(stat, val):
 
 SteamAdapter.set_stat = set_stat_disable
 
-
+# Possibly needed to ensure no reoccuring dots on Level 1
 def set_presence_menu_disable():
     global FixLevelSkip
     FixLevelSkip = 0
