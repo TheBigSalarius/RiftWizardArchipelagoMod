@@ -101,15 +101,21 @@ def add_prop_ap(self, prop, x, y):
                 Seed = data["seed"]
                 APRemoteCommunication = os.path.join("mods", "ArchipelagoMod", "AP", Seed)
                 APLocalCommunication = os.path.join("mods", "ArchipelagoMod", "AP", Seed, "local")
-
+    last_checked_manadot_path = os.path.join(APLocalCommunication, LastCheckedManaDot)
+    last_checked_floor_path = os.path.join(APLocalCommunication, LastCheckedFloor)
+    
     if prop.name == "AP Item":   
         if APChecked < 3:
             APChecked += 1
         else:
             APChecked = 1
+            with open(last_checked_floor_path, 'w') as o:
+                o.write(str(FixLevelSkip + 1))
         check_file_name = ("send" + str(((FixLevelSkip) * 3) + APChecked + LocationOffset))
         file_path = os.path.join(APRemoteCommunication, check_file_name)
         if os.path.isfile(file_path):
+            with open(last_checked_manadot_path, 'w') as i:
+                i.write(str(min(APChecked, 3)))
             return
 
     prop.x = x
@@ -164,7 +170,7 @@ Level.Portal.on_player_enter = on_enter_portal_goal
 # This is called when player enters the Mana Dot item square.
 def ap_on_player_enter(self, player):
     """ Handles the behavior of sending location checks when picking up default AP checks (replaced ManaDots)"""
-    # These are used to calculate the current floor/dot for location reward, the FixLevelSKip addresses the bug
+    # These are used to calculate the current floor/dot for location reward, the FixLevelSkip addresses the bug
     # when you step through to the next floor and start on a Mana Dot because your "floor" between floors is 0
     last_checked_floor_path = os.path.join(APLocalCommunication, LastCheckedFloor)
     last_checked_manadot_path = os.path.join(APLocalCommunication, LastCheckedManaDot)
@@ -175,26 +181,29 @@ def ap_on_player_enter(self, player):
     # This can be done better I'm sure but leverages files to support closing and continuing a run later on
     with open(last_checked_floor_path, "r") as e:
         last_floor = int(e.read())
-    if self.level.level_no == 0:
-        with open(last_checked_floor_path, 'w') as o:
-            o.write(str(FixLevelSkip + 1))
-        with open(last_checked_manadot_path, 'w') as p:
-            p.write('1')
-    elif self.level.level_no > last_floor:
-        with open(last_checked_floor_path, 'w') as f:
-            f.write(str(self.level.level_no))
-        with open(last_checked_manadot_path, 'w') as g:
-            g.write('1')
-    elif self.level.level_no == last_floor:
+#    if self.level.level_no == 0:
+#        with open(last_checked_floor_path, 'w') as o:
+#            o.write(str(FixLevelSkip + 1))
+#        with open(last_checked_manadot_path, 'w') as p:
+#            p.write('1')
+#    elif self.level.level_no > last_floor:
+#        with open(last_checked_floor_path, 'w') as f:
+#            f.write(str(self.level.level_no))
+#        with open(last_checked_manadot_path, 'w') as g:
+#            g.write('1')
+    if self.level.level_no == last_floor or self.level.level_no == 0:
         with open(last_checked_manadot_path, "r") as h:
             last_dot = int(h.read())
         with open(last_checked_manadot_path, 'w') as i:
              i.write(str(min(last_dot + 1, 3)))
+    else:
+        print("Error in dot calc")
     with open(last_checked_floor_path, "r") as j:
         check_calc_floor = int(j.read())
     with open(last_checked_manadot_path, 'r') as k:
         check_calc_dot = int(k.read())
 
+    
     # Creates send#### file in the remote folder to send that location
     create_check_file_name = str(((check_calc_floor - 1) * 3) + check_calc_dot + LocationOffset)
     with open((os.path.join(APRemoteCommunication, ("send" + create_check_file_name))), 'w') as z:
@@ -665,8 +674,6 @@ SteamAdapter.try_get_sw = try_get_sw_disable
 
 
 def set_stat_disable(stat, val):
-    global FixLevelSkip
-    FixLevelSkip = 0
     pass
 
 
@@ -674,6 +681,8 @@ SteamAdapter.set_stat = set_stat_disable
 
 
 def set_presence_menu_disable():
+    global FixLevelSkip
+    FixLevelSkip = 0
     pass
 
 
