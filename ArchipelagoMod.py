@@ -54,6 +54,7 @@ Seed = -1
 LocationOffset = 18000
 APChecked = 4
 APCheckCount = 0
+CatchCollect = 0
 
 frm = inspect.stack()[-1]
 RiftWizard = inspect.getmodule(frm[0])
@@ -159,9 +160,9 @@ def ap_on_player_enter(self, player):
     last_checked_manadot_path = os.path.join(APLocalCommunication, LastCheckedManaDot)
     global FixLevelSkip
     global APCheckCount
+    global CatchCollect
     # Check to ensure Client is connected
     check_connection()
-    print(self.level.level_no)
     # This can be done better I'm sure but leverages files to support closing and continuing a run later on
     if self.level.level_no == 0:
         with open(last_checked_floor_path, 'w') as o:
@@ -196,7 +197,14 @@ def ap_on_player_enter(self, player):
         z.write("")
     self.level.remove_prop(self)
     self.level.event_manager.raise_event(EventOnItemPickup(self), player)
-
+    
+    if self.level.level_no == 0 and not any(u.name == "AP Item" for u in RiftWizard.main_view.game.cur_level.props):
+        CatchCollect = 1
+    elif self.level.level_no != 0 and not any(u.name == "AP Item" for u in RiftWizard.main_view.game.cur_level.props):
+        for l in [1, 2, 3]:
+            collect_check_file_name = str(((self.level.level_no - 1) * 3) + l + LocationOffset)
+            with open((os.path.join(APRemoteCommunication, ("send" + collect_check_file_name))), 'w') as z:
+                z.write("")
 
 Level.ManaDot.on_player_enter = ap_on_player_enter
 
@@ -246,7 +254,6 @@ def ap_on_player_enter_consumable(self, player):
         player.add_item(self.item)
         self.level.remove_prop(self)
         self.level.event_manager.raise_event(EventOnItemPickup(self.item), player)
-
 
 Level.ItemPickup.on_player_enter = ap_on_player_enter_consumable
 
@@ -319,7 +326,7 @@ def ap_is_awaiting_input(self):
     global APRemoteCommunication
     global APLocalCommunication
     global Seed
-
+    global CatchCollect
     check_connection()
     # Fixes an issue where the level is 0 inbetween levels and the level is 0 when dropped on an item on a new floor
     FixLevelSkip = RiftWizard.main_view.game.level_num
@@ -378,7 +385,13 @@ def ap_is_awaiting_input(self):
                 data = json.load(s)
                 FloorGoal = data["floor_goal"]
                 # print("Floor Goal Set: ", FloorGoal)
-
+    if CatchCollect == 1:
+        if not any(u.name == "AP Item" for u in RiftWizard.main_view.game.cur_level.props):
+            for l in [1, 2, 3]:
+                collect_check_file_name = str(((FixLevelSkip - 1) * 3) + l + LocationOffset)
+                with open((os.path.join(APRemoteCommunication, ("send" + collect_check_file_name))), 'w') as z:
+                    z.write("")
+        CatchCollect = 0
     process_mana_file(self, APManaDotFile, 1)
     process_mana_file(self, APDoubleManaDotFile, 2)
     process_mana_file(self, APConsumableFile, 0)
