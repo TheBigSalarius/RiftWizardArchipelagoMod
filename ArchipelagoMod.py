@@ -375,7 +375,7 @@ def ap_is_awaiting_input(self):
         if os.path.isfile(SlotDataPath):
             with open(SlotDataPath, "r") as q:
                 data = json.load(q)
-                FloorGoalStatus = data["goal"]
+                FloorGoalStatus = data["end_goal"]
                 # print("Goal Status Set: ", FloorGoalStatus)
 
     # Checks for the floor goal # if the goal is floor instead of Mordred (initial check)
